@@ -22,6 +22,7 @@ namespace ZBApi.Controllers
 
         [Route("login/password")]
         [AllowAnonymous]
+        [ProducesResponseType(200, Type = typeof(UserLoginResponseModel))]
         [HttpPost]
         public async Task<IActionResult> AuthEmail([FromBody]UserLoginModel model)
         {

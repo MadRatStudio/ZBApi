@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using AutoMapper;
 using Dal;
 using Infrastructure.Entities;
 using Infrastructure.Model.Common;
@@ -18,31 +20,48 @@ namespace Manager
 {
     public class UserManager : BaseManager
     {
-        public UserManager(IHttpContextAccessor httpContextAccessor, AppUserManager appUserManager, IUserRepository<AppUser> userRepository, IRoleRepository roleRepository) : base(httpContextAccessor, appUserManager, userRepository, roleRepository)
+        public UserManager(IHttpContextAccessor httpContextAccessor, AppUserManager appUserManager, IUserRepository<AppUser> userRepository, IRoleRepository roleRepository, IMapper mapper) : base(httpContextAccessor, appUserManager, userRepository, roleRepository, mapper)
         {
         }
 
-        public async Task<ApiResponse> TokenEmail(UserLoginModel model)
+        public async Task<ApiResponse<UserLoginResponseModel>> TokenEmail(UserLoginModel model)
         {
             if (model == null) return Fail();
-            var identity = await GetIdentity(model);
+            var userBucket = await GetIdentity(model);
 
-            if (identity == null) return Fail();
+            if (userBucket == null) return Fail("Bad login");
+
+            var user = userBucket.Item1;
+            var roles = userBucket.Item2;
+            var identity = userBucket.Item3;
 
             var now = DateTime.UtcNow;
+            var expires = now.Add(TimeSpan.FromSeconds(AuthOptions.LIFETIME));
+
             var jwt = new JwtSecurityToken(
                 issuer: AuthOptions.ISSUER,
                 audience: AuthOptions.AUDIENCE,
                 notBefore: now,
-                expires: now.Add(TimeSpan.FromSeconds(AuthOptions.LIFETIME)),
+                expires: expires,
                 claims: identity.Claims,
                 signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
 
             var encoded = new JwtSecurityTokenHandler().WriteToken(jwt);
-            return Ok(encoded, "Success");
+
+            var response = _mapper.Map<UserLoginResponseModel>(user);
+            response.Roles = roles;
+            response.Token = new UserLoginTokenResponseModel
+            {
+                Expires = expires,
+                Token = encoded
+            };
+
+            await _appUserManager.AddLoginAsync(user, new Microsoft.AspNetCore.Identity.UserLoginInfo(LoginOptions.SERVICE_LOGIN_PROVIDER, encoded, LoginOptions.SERVICE_LOGIN_DISPLAY));
+
+            return Ok(response, "Success");
         }
 
-        protected async Task<ClaimsIdentity> GetIdentity(UserLoginModel model)
+        protected async Task<Tuple<AppUser, List<string>, ClaimsIdentity>> GetIdentity(UserLoginModel model)
         {
             var user = await _appUserManager.FindByEmailAsync(model.Email);
             if (user == null) return null;
@@ -61,7 +80,7 @@ namespace Manager
             }
 
             ClaimsIdentity identity = new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType, ClaimsIdentity.DefaultRoleClaimType);
-            return identity;
+            return new Tuple<AppUser, List<string>, ClaimsIdentity>(user, roles.ToList(), identity);
         }
     }
 }

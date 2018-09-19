@@ -11,6 +11,7 @@ using System.Security.Claims;
 using MRDbIdentity.Domain;
 using System.Threading.Tasks;
 using Infrastructure.Entities;
+using AutoMapper;
 
 namespace Manager
 {
@@ -21,6 +22,7 @@ namespace Manager
         protected readonly IUserRepository<AppUser> _userRepository;
         protected readonly IRoleRepository _roleRepository;
         protected readonly IHttpContextAccessor _httpContextAccessor;
+        protected readonly IMapper _mapper;
 
         protected string _currentUserEmail => _httpContextAccessor.HttpContext.User?.FindFirst(ClaimsIdentity.DefaultNameClaimType)?.Value;
         protected List<string> _currentUserRoles => _httpContextAccessor.HttpContext.User?.FindAll(ClaimsIdentity.DefaultRoleClaimType)?.Select(x => x.Value).ToList() ?? new List<string>();
@@ -39,12 +41,13 @@ namespace Manager
             return _currentUser;
         }
 
-        public BaseManager(IHttpContextAccessor httpContextAccessor, AppUserManager appUserManager, IUserRepository<AppUser> userRepository, IRoleRepository roleRepository)
+        public BaseManager(IHttpContextAccessor httpContextAccessor, AppUserManager appUserManager, IUserRepository<AppUser> userRepository, IRoleRepository roleRepository, IMapper mapper)
         {
             _httpContextAccessor = httpContextAccessor;
             _appUserManager = appUserManager;
             _userRepository = userRepository;
             _roleRepository = roleRepository;
+            _mapper = mapper;
         }
 
         public ApiResponse Ok(object response = null, string message = null)

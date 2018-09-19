@@ -18,6 +18,7 @@ namespace Infrastructure.Model.Common
 
         [JsonProperty("error")]
         public object Error { get; set; }
+
     }
 
     public class ApiResponse<T>
@@ -30,5 +31,16 @@ namespace Infrastructure.Model.Common
 
         [JsonProperty("response")]
         public T Response { get; set; }
+
+        public static implicit operator ApiResponse<T>(ApiResponse a)
+        {
+            return new ApiResponse<T>
+            {
+                IsSuccess = a.IsSuccess,
+                Message = a.Message,
+                Response = (T)a.Response
+            };
+        }
+
     }
 }

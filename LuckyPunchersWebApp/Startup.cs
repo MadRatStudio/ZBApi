@@ -14,6 +14,8 @@ using Microsoft.IdentityModel.Tokens;
 using Manager.Options;
 using Microsoft.AspNetCore.Http;
 using Infrastructure.Entities;
+using AutoMapper.Execution;
+using AutoMapper;
 
 namespace ZBApi
 {
@@ -69,7 +71,7 @@ namespace ZBApi
             services.AddTransient<AccountManager>();
             services.AddTransient<UserManager>();
 
-
+            services.AddAutoMapper();
             services.AddMvc();
         }
 
