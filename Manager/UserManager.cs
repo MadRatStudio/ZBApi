@@ -53,7 +53,9 @@ namespace Manager
             response.Token = new UserLoginTokenResponseModel
             {
                 Expires = expires,
-                Token = encoded
+                Token = encoded,
+                LoginProvider = LoginOptions.SERVICE_LOGIN_PROVIDER,
+                LoginProviderDisplay = LoginOptions.SERVICE_LOGIN_DISPLAY
             };
 
             await _appUserManager.AddLoginAsync(user, new Microsoft.AspNetCore.Identity.UserLoginInfo(LoginOptions.SERVICE_LOGIN_PROVIDER, encoded, LoginOptions.SERVICE_LOGIN_DISPLAY));

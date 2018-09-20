@@ -25,8 +25,10 @@ namespace Infrastructure.Model.User
     {
         public string Token { get; set; }
         public DateTime Expires { get; set; }
+
         [JsonProperty("login_provider")]
         public string LoginProvider { get; set; }
-
+        [JsonProperty("login_provider_display")]
+        public string LoginProviderDisplay { get; set; }
     }
 }
